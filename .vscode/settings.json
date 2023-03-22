@@ -1,0 +1,6 @@
+{
+    "cmake.sourceDirectory": "${workspaceFolder}/SDK/c++",
+    "files.associations": {
+        "vector": "cpp"
+    }
+}
