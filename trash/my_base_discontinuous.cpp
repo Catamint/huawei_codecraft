@@ -15,7 +15,7 @@ struct table{
     int mtr_bag[8];     //已有原料: [1,8] (二进制位描述: 48=110000={4,5})
     int prd_bag;        //已有商品: {y:1, n:0}
 } crafting[50];
-vector<table*> crafts[10];  //按种类分
+vector<table*> crafts_by_kind[10];  //按种类分
 
 /*机器人*/
 struct {
@@ -69,7 +69,7 @@ void readCrafting(int i){
 }
 void linkCrafting(){
     for(int i=0;i<K;i++){
-        crafts[crafting[i].kind].push_back(&crafting[i]);
+        crafts_by_kind[crafting[i].kind].push_back(&crafting[i]);
     }
 }
 void printCrafting__(int i){

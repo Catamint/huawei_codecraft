@@ -3,9 +3,8 @@
 
 int main(){
     int a=48;
-    for(int i=0;i<6;i++){
-        printf("%d ",a%2);
-        a=a>>1;
+    for(int i=0;i<9;i++){
+        printf("%d ",(a>>i)%2);
     }
     printf("%f",atan2(-1,0));
 }
