@@ -308,13 +308,13 @@ int main() {
                 //sell
                 if(c->action==1){
                     printf("sell %d\n", robot_id);
-                    c->action=0; //frush action
                     current_craft->mtr_bag_offline[c->carring]=0;
                     current_craft->mtr_bag[c->carring]=1;
 
                     if(search_path(c)==1){
                         c->destination->prd_bag_offline=0;
                         c->destination_sell->mtr_bag_offline[c->destination->kind]=1;
+                        c->action=0; //frush action
                     }else{
                         //if !flag action=-1;
                     }
