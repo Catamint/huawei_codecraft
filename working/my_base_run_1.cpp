@@ -2,7 +2,6 @@
 #include<cstdio>
 #include<cmath>
 #include<vector>
-#include<set>
 #include<algorithm>
 using namespace std;
 
@@ -311,7 +310,7 @@ int main() {
                     printf("sell %d\n", robot_id);
                     c->action=0; //frush action
                     current_craft->mtr_bag_offline[c->carring]=0;
-                    current_craft->mtr_bag[c->destination->kind]=1;
+                    current_craft->mtr_bag[c->carring]=1;
 
                     if(search_path(c)==1){
                         c->destination->prd_bag_offline=0;
