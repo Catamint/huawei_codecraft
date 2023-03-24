@@ -42,7 +42,7 @@ struct contralling{
     double distance;  //距离
     double theta_last;  //上一个角度
     double distance_last;   //上一个距离
-} robot_control[3];
+} robot_control[5];
 
 char line[1024];        //输入行
 char mymap[100][100];   //地图 (1格 = 0.5m)
@@ -305,9 +305,8 @@ int main() {
                         c->destination->prd_bag_offline=0;
                         c->destination_sell->mtr_bag_offline[c->destination->kind]=1;
                         c->action=0; //frush action
-                    }else{
-                        //if !flag action=-1;
                     }
+
                 }else if(c->action==0){
                     printf("buy %d\n", robot_id);
                     c->action=1; //frush action
@@ -328,11 +327,12 @@ int main() {
             p->distance_last=p->distance;
             p->theta_last=p->theta;
 
-            for(int i=0;i<4;i++){
-                if(distance_square(c->pose, robot[i].pose)<1 && 
-                   abs(c->pose[2]-robot[i].pose[2])-M_PI<0.2)
-                    c->w=1;
-            }
+            // for(int i=0;i<4;i++){
+            //     if(distance_square(c->pose, robot[i].pose)<1 && 
+            //        abs(c->pose[2]-robot[i].pose[2])-M_PI<0.2)
+            //         c->w=1;
+            // }/////////////////////////////////////////////////////////////////
+
             printf("forward %d %f\n", robot_id, v);
             printf("rotate %d %f\n", robot_id, w);
         }
