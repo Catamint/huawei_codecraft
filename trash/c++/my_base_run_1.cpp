@@ -2,6 +2,7 @@
 #include<cstdio>
 #include<cmath>
 #include<vector>
+#include<set>
 #include<algorithm>
 using namespace std;
 
@@ -11,21 +12,22 @@ struct table{
     int kind;                    //种类 (1-9)
     double pos[2];               //位置向量 { 0:x  1:y } (m)
     int prd_cd;                  //商品剩余cd: (帧)
-    int mtr_bag[9];              //已有原料: [1,8] (二进制位描述: 48=110000={4,5})
-    int mtr_bag_offline[9];      //已有原料(线下)
+    int mtr_bag;              //已有原料: [1,8] (二进制位描述: 48=110000={4,5})
+    int mtr_bag_offline[8];      //已有原料(线下)
     int prd_bag;                 //已有商品: {y:1, n:0}
-    int prd_bag_offline;
     vector<table*> cra_means;   //临近的工作台
     vector<table*> cra_down;    //下一流程的工作台
     double temp_distance;       //temp
-} crafting[55];     //[0,K-1]
+} crafting[50];     //[0,K-1]
+
 vector<table*> crafts_by_kind[10];      //按种类分
+
+// vector<table*> crafts_with_good;        //当前有商品的工作台(后续改成等待时间小于到达时间的)
 
 /*机器人*/
 struct rob{
     int craft_id;           //当前所处工作台: (NO crafting in 0.4m ? -1 : [0,K-1])
-    table *destination;     //下一次去往的工作台 {no destination ? -1 : [0,K-1]}
-    table *destination_sell;//下一次去出售的工作台 {no destination ? -1 : [0,K-1]}
+    table *destination;     //去往的工作台 {no destination ? -1 : [0,K-1]}
     int action;             //动作 {0:buy, 1:sell}
     int carring;            //携带的物品编号: [0,7]
     double time_factor;    //时间系数: [0.8,1]
@@ -33,8 +35,7 @@ struct rob{
     double w;            //角速度: rad/s
     double v[2];         //{ 0:v_x, 1:v_y } (m/s)
     double pose[3];      //{ 0:x, 1:y, 2:theta_rad_[-PI,PI] }
-} robot[5];
-double destination_1[5][3];    //机器人的目的地, (考虑加入robot)
+} robot[4];
 
 /*跟踪参数*/
 struct contralling{
@@ -49,7 +50,14 @@ char mymap[100][100];   //地图 (1格 = 0.5m)
 int frame_id;           //帧ID
 int current_money;      //当前的金钱
 int K;                  //crafting个数
+
+double destination_1[4][3];    //测试,机器人的目的地
+
 FILE *test_file;        //测试文件
+
+
+//void 初始化: robot[0:3].destination=-1;
+
 
 bool readOK() {
     // fgets(line, sizeof line, stdin);
@@ -60,21 +68,17 @@ bool readOK() {
 }
 
 void readCrafting(int i){
-    int mtr_bag_b;
     scanf("%d", &crafting[i].kind);
     scanf("%lf%lf", &crafting[i].pos[0], &crafting[i].pos[1]);
     scanf("%d", &crafting[i].prd_cd);
-    scanf("%d", &mtr_bag_b);                        //二进制转列表(未验证)
-    for(int j=0;j<9;j++){
-        crafting[i].mtr_bag[j] = mtr_bag_b % 2;
-        mtr_bag_b=mtr_bag_b>>1;
-    }
+    scanf("%d", &crafting[i].mtr_bag);                        //二进制转列表(未验证)
     scanf("%d", &crafting[i].prd_bag);
 }
 void printCrafting__(int i){
     printf("%d ", crafting[i].kind);
     printf("%f %f ", crafting[i].pos[0], crafting[i].pos[1]);
-    printf("%d ", crafting[i].prd_cd);
+    printf("%d [", crafting[i].prd_cd);
+    printf("%d ", crafting[i].mtr_bag);
     printf("%d ", crafting[i].prd_bag);
     printf("\n");
 }
@@ -159,7 +163,7 @@ double distance_square(double *pos_c, double *pos_d){
 }
 
 void set_downstream(){
-    int next_kind[10][4]={{0,0,0,0},{3,4,5,0},{3,4,6,0},{3,5,6,0},
+    int next_kind[10][4]={{0,0,0,0},{3,4,5,9},{3,4,6,9},{3,5,6,9},
                                     {2,7,9,0},{2,7,9,0},{2,7,9,0},
                                     {2,8,9,0},{0,0,0,0},{0,0,0,0}};
     table *crafting_p=crafting;
@@ -202,9 +206,9 @@ double angle(double *pos_c, double *pos_d){
     return theta;
 }
 void controller(double &v, double &w, contralling *p){
-    const double a1=10,c1=6,ax=0.5, a3=40,c3=40;  //系数
+    const double a1=3,c1=3,ax=-3, a3=10,c3=10;  //系数
     w = a3*p->theta + c3*(p->theta - p->theta_last);
-    v = ax/(abs(w)+ax) * (a1*p->distance + c1*(p->distance - p->distance_last));
+    v = a1*p->distance + c1*(p->distance - p->distance_last);
 }
 void set_destination(double* pos_c, double* pos_d, int rid){
     destination_1[rid][0]=pos_d[0];
@@ -216,30 +220,6 @@ void set_loss(double *pose_c, contralling *p, int rid){
     p->theta = destination_1[rid][2] - pose_c[2];
         if(p->theta > M_PI) p->theta=2*M_PI - p->theta;
         else if(p->theta<-M_PI) p->theta=2*M_PI + p->theta;
-}
-void initialize(){
-    for(int i=0;i<K;i++){
-        crafting[i].prd_bag_offline=1;
-    }
-}
-int search_path(rob *c){
-    table* current_craft = &crafting[c->craft_id];
-    for(int i=0;i<K;i++){
-        if(current_craft->cra_means[i]->prd_bag &&
-           current_craft->cra_means[i]->prd_bag_offline)
-        {
-            table* temp_desti=current_craft->cra_means[i];
-            for(int j=0;j<temp_desti->cra_down.size();j++){
-                if(temp_desti->cra_down[j]->mtr_bag[temp_desti->kind]==0 &&
-                   temp_desti->cra_down[j]->mtr_bag_offline[temp_desti->kind]==0){
-                        c->destination=temp_desti;
-                        c->destination_sell=temp_desti->cra_down[j];
-                        return 1;
-                   }
-            }
-        }
-    }
-    return -1;
 }
 
 int main() {
@@ -254,7 +234,6 @@ int main() {
     map_analyze();
     set_downstream();
     set_means();
-    initialize();
     puts("OK");
     fflush(stdout);
 
@@ -279,8 +258,9 @@ int main() {
 
         /*action*/
         printf("%d\n", frame_id);
-        
-        for (int robot_id=0;robot_id<4;robot_id++)  //test
+
+        int robot_id=0;
+        // for (;robot_id<4;robot_id++)  //test
         {
             rob *c = &robot[robot_id];
             contralling *p = &robot_control[robot_id];
@@ -289,33 +269,35 @@ int main() {
                 v=sqrt(inner_square(c->v));
             
             if(frame_id == 1){
-                c->action=1;
-                // c->destination=&crafting[1]; //////////////////////////////////
-                c->destination=&crafting[robot_id*K/4];
+                c->action=0;
+                c->destination=crafts_by_kind[robot_id+1][3];
             }   //后续添加到初始化函数
 
             if(current_craft->id == c->destination->id){
                 //sell
                 if(c->action==1){
-                    if(c->carring) printf("sell %d\n", robot_id);
-                    current_craft->mtr_bag_offline[c->carring]=0;
-                    current_craft->mtr_bag[c->carring]=1;
-
-                    if(search_path(c)==1){
-                        c->destination->prd_bag_offline=0;
-                        c->destination_sell->mtr_bag_offline[c->destination->kind]=1;
-                        c->action=0; //frush action
-                    }else{
-                        //if !flag action=-1;
+                    printf("sell %d\n", robot_id);
+                    c->action=0; //frush action
+                    for(int i=0;i<K;i++){
+                        if(current_craft->cra_means[i]->prd_bag){
+                            c->destination = current_craft->cra_means[i];
+                            //flag
+                            break;
+                        }
                     }
+                    //if !flag action=-1;
+
                 }else if(c->action==0){
                     printf("buy %d\n", robot_id);
                     c->action=1; //frush action
-
-                    current_craft->prd_bag_offline=1;
-                    current_craft->prd_bag=0;
-
-                    c->destination=c->destination_sell;
+                    for(int i=0;i<current_craft->cra_down.size();i++){
+                        if(((current_craft->cra_down[i]->mtr_bag)>>(c->destination->kind))%2==0){
+                            c->destination = current_craft->cra_down[i];
+                            //flag
+                            break;
+                        }
+                    }
+                    //if !flag action=-1;
                 }
                 //set destination
             }
@@ -328,11 +310,6 @@ int main() {
             p->distance_last=p->distance;
             p->theta_last=p->theta;
 
-            for(int i=0;i<4;i++){
-                if(distance_square(c->pose, robot[i].pose)<1 && 
-                   abs(c->pose[2]-robot[i].pose[2])-M_PI<0.2)
-                    c->w=1;
-            }
             printf("forward %d %f\n", robot_id, v);
             printf("rotate %d %f\n", robot_id, w);
         }
