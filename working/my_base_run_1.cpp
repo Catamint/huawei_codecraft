@@ -202,7 +202,7 @@ double angle(double *pos_c, double *pos_d){
     return theta;
 }
 void controller(double &v, double &w, contralling *p){
-    const double a1=10,c1=6,ax=0.5, a3=40,c3=40;  //系数
+    const double a1=10,c1=6,ax=0.5, a3=20,c3=20;  //系数
     w = a3*p->theta + c3*(p->theta - p->theta_last);
     v = ax/(abs(w)+ax) * (a1*p->distance + c1*(p->distance - p->distance_last));
 }
@@ -290,7 +290,6 @@ int main() {
             
             if(frame_id == 1){
                 c->action=1;
-                // c->destination=&crafting[1]; //////////////////////////////////
                 c->destination=&crafting[robot_id*K/4];
             }   //后续添加到初始化函数
 
@@ -301,7 +300,7 @@ int main() {
                     current_craft->mtr_bag_offline[c->carring]=0;
                     current_craft->mtr_bag[c->carring]=1;
 
-                    if(search_path(c)==1){
+                    if(frame_id<8750/*最后5秒不买商品*/ && search_path(c)==1){
                         c->destination->prd_bag_offline=0;
                         c->destination_sell->mtr_bag_offline[c->destination->kind]=1;
                         c->action=0; //frush action
@@ -326,12 +325,6 @@ int main() {
             controller(v,w,p);
             p->distance_last=p->distance;
             p->theta_last=p->theta;
-
-            // for(int i=0;i<4;i++){
-            //     if(distance_square(c->pose, robot[i].pose)<1 && 
-            //        abs(c->pose[2]-robot[i].pose[2])-M_PI<0.2)
-            //         c->w=1;
-            // }/////////////////////////////////////////////////////////////////
 
             printf("forward %d %f\n", robot_id, v);
             printf("rotate %d %f\n", robot_id, w);
