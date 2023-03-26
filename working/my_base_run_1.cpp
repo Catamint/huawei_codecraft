@@ -179,6 +179,82 @@ void set_downstream(){
     }
 }
 
+void set_downstream_map1(){
+    int next_kind[10][4]={{0,0,0,0},{3,4,5,0},{3,4,6,0},{3,5,6,0},
+                                    {2,7,0,0},{2,7,0,0},{2,7,0,0},
+                                    {2,8,9,0},{0,0,0,0},{0,0,0,0}};
+    table *crafting_p=crafting;
+    for(int i=0; i<K; i++){
+        vector<table*> &cra_down = crafting_p->cra_down;
+        int *next_p=next_kind[crafting_p->kind];
+        vector<table*>::iterator t[3];
+        vector<table*>::iterator e[3];
+        for(int j=1;j<next_p[0]+1;j++){
+            t[j]=crafts_by_kind[next_p[j]].begin();
+            e[j]=crafts_by_kind[next_p[j]].end();
+        }
+        while (1){
+            int flag=0;
+            if(t[1]!=e[1]){ cra_down.push_back(*t[1]++);    flag=1;}
+            if(t[2]!=e[2]){ cra_down.push_back(*t[2]++);    flag=1;}
+            if(t[3]!=e[3]){ cra_down.push_back(*t[3]++);    flag=1;}
+            if(flag==0) break;
+        }
+        crafting_p++;
+    }
+}
+
+void set_downstream_map4(){
+    int next_kind[10][4]={{0,0,0,0},{3,4,5,0},{3,4,6,0},{3,5,6,0},
+                                    {2,7,9,0},{2,7,9,0},{2,7,9,0},
+                                    {2,8,9,0},{0,0,0,0},{0,0,0,0}};
+    table *crafting_p=crafting;
+    for(int i=0; i<K; i++){
+        vector<table*> &cra_down = crafting_p->cra_down;
+        int *next_p=next_kind[crafting_p->kind];
+        for(int j=1;j<next_p[0]+1;j++){
+            cra_down.insert(cra_down.end(),
+                            crafts_by_kind[next_p[j]].begin(),
+                            crafts_by_kind[next_p[j]].end());
+        }
+        for(int j=0;j<cra_down.size();j++){
+            cra_down[j]->temp_distance=distance_square(crafting_p->pos,cra_down[j]->pos);
+        }
+        sort(cra_down.begin(), cra_down.end(), sorting);
+        if(crafting_p->id==2 || crafting_p->id==6){
+            cra_down.insert(cra_down.begin(), &crafting[17]);
+        }
+        crafting_p++;
+    }
+}
+
+void set_downstream_map2(){
+    int next_kind[10][4]={{0,0,0,0},{3,4,5,0},{3,4,6,0},{3,5,6,0},
+                                    {2,7,9,0},{2,7,9,0},{2,7,9,0},
+                                    {2,8,9,0},{0,0,0,0},{0,0,0,0}};
+    table *crafting_p=crafting;
+    for(int i=0; i<K; i++){
+        vector<table*> &cra_down = crafting_p->cra_down;
+        int *next_p=next_kind[crafting_p->kind];
+        for(int j=1;j<next_p[0]+1;j++){
+            cra_down.insert(cra_down.end(),
+                            crafts_by_kind[next_p[j]].begin(),
+                            crafts_by_kind[next_p[j]].end());
+        }
+        for(int j=0;j<cra_down.size();j++){
+            cra_down[j]->temp_distance=distance_square(crafting_p->pos,cra_down[j]->pos);
+        }
+        sort(cra_down.begin(), cra_down.end(), sorting);
+        if(crafting_p->id==5 || crafting_p->id==7){
+            cra_down.insert(cra_down.begin(), &crafting[0]);
+        }
+        if(crafting_p->id==17 || crafting_p->id==19){
+            cra_down.insert(cra_down.begin(), &crafting[24]);
+        }
+        crafting_p++;
+    }
+}
+
 void set_means(){
     table *crafting_i=crafting;
     for(int i=0;i<K;i++){
@@ -252,7 +328,16 @@ int main() {
     /*初始化*/
     if(!readMap()) return -1; //读入地图
     map_analyze();
-    set_downstream();
+    if(K==43){
+        set_downstream_map1();
+    }else if(K==25){
+        set_downstream_map2();
+    }else if(K==18){
+        set_downstream_map4();
+    }else{
+        set_downstream();
+    }
+    
     set_means();
     initialize();
     puts("OK");
