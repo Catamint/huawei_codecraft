@@ -71,14 +71,6 @@ void readCrafting(int i){
     }
     scanf("%d", &crafting[i].prd_bag);
 }
-void printCrafting__(int i){
-    printf("%d ", crafting[i].kind);
-    printf("%f %f ", crafting[i].pos[0], crafting[i].pos[1]);
-    printf("%d ", crafting[i].prd_cd);
-    printf("%d ", crafting[i].prd_bag);
-    printf("\n");
-}
-
 void readRobot(int i){
     scanf("%d", &robot[i].craft_id);
     scanf("%d", &robot[i].carring);
@@ -90,18 +82,6 @@ void readRobot(int i){
     if(robot[i].pose[2]<0) robot[i].pose[2]=2*M_PI+robot[i].pose[2];
     scanf("%lf%lf", &robot[i].pose[0], &robot[i].pose[1]);
 }
-void printRobot__(int i){
-    printf("%d ", robot[i].craft_id);
-    printf("%d ", robot[i].carring);
-    printf("%f ", robot[i].time_factor);
-    printf("%f ", robot[i].crash_factor);
-    printf("%f ", robot[i].w);
-    printf("%f %f ", robot[i].v[0], robot[i].v[1]);
-    printf("%f ", robot[i].pose[2]);
-    printf("%f %f ", robot[i].pose[0], robot[i].pose[1]);
-    printf("\n");
-}
-
 bool readMap(){
     int i=0;
     while (fgets(line, sizeof line, stdin)) {
@@ -112,15 +92,6 @@ bool readMap(){
     printf("map illegal");
     return false;
 }
-void printMap__(){
-    for(char i=0;i<100;i++){
-        for(char j=0;j<100;j++){
-            printf("%c ", mymap[i][j]);
-        }
-        printf("\n");
-    }
-}
-
 void map_analyze(){
     char p;
     rob* rob_p=robot;
@@ -153,7 +124,6 @@ void map_analyze(){
 bool sorting(const table *p, const table *q){
     return p->temp_distance < q->temp_distance;
 }
-
 double distance_square(double *pos_c, double *pos_d){
     return pow((pos_d[0]-pos_c[0]),2)+pow((pos_d[1]-pos_c[1]),2);
 }
@@ -179,6 +149,7 @@ void set_downstream(){
     }
 }
 
+/*针对不同地图优化的craft_down排序*/
 void set_downstream_map1(){
     int next_kind[10][4]={{0,0,0,0},{3,4,5,0},{3,4,6,0},{3,5,6,0},
                                     {2,7,0,0},{2,7,0,0},{2,7,0,0},
@@ -204,6 +175,7 @@ void set_downstream_map1(){
     }
 }
 
+/*根据距离对下一流程工作台排序, 确定下一次卖出的地点*/
 void set_downstream_map4(){
     int next_kind[10][4]={{0,0,0,0},{3,4,5,0},{3,4,6,0},{3,5,6,0},
                                     {2,7,9,0},{2,7,9,0},{2,7,9,0},
@@ -255,6 +227,7 @@ void set_downstream_map2(){
     }
 }
 
+/*根据距离对邻近工作台排序, 确定下一次购买的地点*/
 void set_means(){
     table *crafting_i=crafting;
     for(int i=0;i<K;i++){
@@ -351,11 +324,9 @@ int main() {
         scanf("%d", &K);
         for(int i=0;i<K;i++){  //注意, 若不事先读第一帧, 从0开始
             readCrafting(i); // 读入工作台 (*K)
-            // printCrafting__(i);
         }
         for(int i=0;i<4;i++){
             readRobot(i);   //读入机器人 (*4)
-            // printRobot__(i);
         }
         if(readOK()==false) {
             printf("input error");  //检测输入
